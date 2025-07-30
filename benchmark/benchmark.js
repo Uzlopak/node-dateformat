@@ -1,5 +1,5 @@
-var previousDateFormat = require("./previousDateFormat");
-var newDateFormat = require("../lib/dateformat");
+import { Bench } from "tinybench"
+import dateFormat from "../src/dateformat.js";
 
 const masks = [
   "d",
@@ -11,28 +11,16 @@ const masks = [
   "longTime",
   "default",
 ];
-let results = [];
+
+const bench = new Bench({ name: 'simple benchmark', time: 100 })
 
 masks.forEach((mask) => {
-  const previousSpeed = getSpeed(false, mask);
-  const newSpeed = getSpeed(true, mask);
-  results.push({
-    mask: mask,
-    previous: previousSpeed + "ms",
-    new: newSpeed + "ms",
-    improvement: Math.round((previousSpeed / newSpeed - 1) * 100, 2) + "%",
+  bench.add(mask, () => {
+    dateFormat(new Date(), mask);
   });
 });
 
-function getSpeed(newVersion, mask) {
-  const startTime = new Date();
-  const date = new Date();
-  for (var i = 0; i < 100_000; i++) {
-    if (newVersion) newDateFormat(date, mask);
-    else previousDateFormat(date, mask);
-  }
-  const endTime = new Date();
-  return endTime - startTime;
-}
+await bench.run()
 
-console.table(results);
+console.log(bench.name)
+console.table(bench.table())
