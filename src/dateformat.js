@@ -74,8 +74,8 @@ export default function dateFormat(date, mask, utc, gmt) {
   const N = () => getDayOfWeek(date);
 
   const flags = {
-    d: () => d(),
-    dd: () => pad(d()),
+    d: d,
+    dd: () => PAD_2[d()],
     ddd: () => i18n.dayNames[D()],
     DDD: () => getDayName({
       y: y(),
@@ -94,21 +94,21 @@ export default function dateFormat(date, mask, utc, gmt) {
       dayName: i18n.dayNames[D() + 7]
     }),
     m: () => m() + 1,
-    mm: () => pad(m() + 1),
+    mm: () => PAD_2[m() + 1],
     mmm: () => i18n.monthNames[m()],
     mmmm: () => i18n.monthNames[m() + 12],
     yy: () => String(y()).slice(2),
-    yyyy: () => pad(y(), 4),
+    yyyy: () => PAD_4[y()],
     h: () => H() % 12 || 12,
-    hh: () => pad(H() % 12 || 12),
-    H: () => H(),
-    HH: () => pad(H()),
-    M: () => M(),
-    MM: () => pad(M()),
-    s: () => s(),
-    ss: () => pad(s()),
-    l: () => pad(L(), 3),
-    L: () => pad(Math.floor(L() / 10)),
+    hh: () => PAD_2[(H() % 12 || 12)],
+    H: H,
+    HH: () => PAD_2[H()],
+    M: M,
+    MM: () => PAD_2[M()],
+    s: s,
+    ss: () => PAD_2[s()],
+    l: () => PAD_3[L()],
+    L: () => PAD_2[Math.floor(L() / 10)],
     t: () =>
       H() < 12
         ? i18n.timeNames[0]
@@ -133,19 +133,19 @@ export default function dateFormat(date, mask, utc, gmt) {
           : formatTimezone(date),
     o: () =>
       (o() > 0 ? "-" : "+") +
-      pad(Math.floor(Math.abs(o()) / 60) * 100 + (Math.abs(o()) % 60), 4),
+      PAD_4[Math.floor(Math.abs(o()) / 60) * 100 + (Math.abs(o()) % 60)],
     p: () =>
       (o() > 0 ? "-" : "+") +
-      pad(Math.floor(Math.abs(o()) / 60), 2) +
+      PAD_2[Math.floor(Math.abs(o()) / 60)] +
       ":" +
-      pad(Math.floor(Math.abs(o()) % 60), 2),
+      PAD_2[Math.floor(Math.abs(o()) % 60)],
     S: () =>
       ["th", "st", "nd", "rd"][
       d() % 10 > 3 ? 0 : (((d() % 100) - (d() % 10) != 10) * d()) % 10
       ],
-    W: () => W(),
-    WW: () => pad(W()),
-    N: () => N(),
+    W: W,
+    WW: () => PAD_2[W()],
+    N: N,
   };
 
   return mask.replace(token, (match) => {
@@ -220,12 +220,9 @@ export let i18n = {
   timeNames: ["a", "p", "am", "pm", "A", "P", "AM", "PM"],
 };
 
-/**
- * @param {number} val 
- * @param {2|4} len 
- * @returns {string}
- */
-const pad = (val, len = 2) => String(val).padStart(len, '0');
+const PAD_2 = new Array(1e2).fill(0).map((_, i) => String(i).padStart(2, '0'));
+const PAD_3 = new Array(1e3).fill(0).map((_, i) => String(i).padStart(3, '0'));
+const PAD_4 = new Array(1e4).fill(0).map((_, i) => String(i).padStart(4, '0'));
 
 /**
  * Get day name
