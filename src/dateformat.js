@@ -122,7 +122,7 @@ export default function dateFormat(date, mask, utc, gmt) {
       m: m(),
       d: d(),
       _: _,
-      dayName: i18n.dayNamesShort[D()],
+      D: D,
       short: true
     }),
     dddd: () => i18n.dayNamesLong[D()],
@@ -131,7 +131,8 @@ export default function dateFormat(date, mask, utc, gmt) {
       m: m(),
       d: d(),
       _: _,
-      dayName: i18n.dayNamesLong[D()]
+      D: D,
+      short: false
     }),
     m: () => m() + 1,
     mm: () => PAD_2[m() + 1],
@@ -290,32 +291,36 @@ const PAD_4 = new Array(1e4).fill(0).map((_, i) => String(i).padStart(4, '0'));
  * @param  {Object}
  * @return {String}
  */
-const getDayName = ({ y, m, d, _, dayName, short = false }) => {
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(_.getDate(yesterday) - 1);
-  const tomorrow = new Date();
-  tomorrow.setDate(_.getDate(tomorrow)+ 1);
-  const today_d = () => _.getDate(today);
-  const today_m = () => _.getMonth(today);
-  const today_y = () => _.getFullYear(today);
-  const yesterday_d = () => _.getDate(yesterday);
-  const yesterday_m = () => _.getMonth(yesterday);
-  const yesterday_y = () => _.getFullYear(yesterday);
-  const tomorrow_d = () => _.getDate(tomorrow);
-  const tomorrow_m = () => _.getMonth(tomorrow);
-  const tomorrow_y = () => _.getFullYear(tomorrow);
+const getDayName = ({ y, m, d, _, D, short = false }) => {
 
-  if (today_y() === y && today_m() === m && today_d() === d) {
+  const referenceDate = new Date();
+  if (
+    _.getDate(referenceDate) === d &&
+    _.getMonth(referenceDate) === m &&
+    _.getFullYear(referenceDate) === y
+  ) {
     return short ? 'Tdy' : 'Today';
   }
-  else if (yesterday_y() === y && yesterday_m() === m && yesterday_d() === d) {
+
+  referenceDate.setDate(referenceDate.getDate() - 1);
+  if (
+    _.getDate(referenceDate) === d &&
+    _.getMonth(referenceDate) === m &&
+    _.getFullYear(referenceDate) === y
+  ) {
     return short ? 'Ysd' : 'Yesterday';
   }
-  else if (tomorrow_y() === y && tomorrow_m() === m && tomorrow_d() === d) {
+
+  referenceDate.setDate(referenceDate.getDate() + 2);
+  if (
+    _.getDate(referenceDate) === d &&
+    _.getMonth(referenceDate) === m &&
+    _.getFullYear(referenceDate) === y
+  ) {
     return short ? 'Tmw' : 'Tomorrow';
   }
-  return dayName;
+
+  return short ? i18n.dayNamesShort[D()] : i18n.dayNamesLong[D()];
 };
 
 /**

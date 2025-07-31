@@ -22,6 +22,29 @@ masks.forEach((mask) => {
   });
 });
 
+{
+  const date = new Date();
+  bench.add("DDDD - today", () => {
+    dateFormat(date, "DDDD");
+  });
+}
+
+{
+  const date = new Date()
+  date.setDate(new Date().getDate() + 1);
+  bench.add("DDDD - tomorrow", () => {
+    dateFormat(date, "DDDD");
+  });
+}
+
+{
+  const date = new Date()
+  date.setDate(new Date().getDate() - 1);
+  bench.add("DDDD - yesterday", () => {
+    dateFormat(date, "DDDD");
+  });
+}
+
 await bench.run()
 
 console.log(bench.name)
