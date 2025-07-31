@@ -71,21 +71,33 @@ export default function dateFormat(date, mask, utc, gmt) {
   }
 
   if (mask) {
-    mask = maskNames.includes(mask)
-      ? masks[mask]
-      : mask;
-  } else {
-    mask = masks["default"];
-  }
-
-  // Allow setting the utc/gmt argument via the mask
-  const maskSlice = mask.slice(0, 4);
-  if (maskSlice === "UTC:" || maskSlice === "GMT:") {
-    mask = mask.slice(4);
-    utc = true;
-    if (maskSlice === "GMT:") {
-      gmt = true;
+    if (maskNames.includes(/** @type {typeof maskNames[number]} */ (mask))) {
+      if (mask === 'isoUtcDateTime') {
+        utc = true;
+      }
+      mask = masks[mask]
+    } else {
+      // Allow setting the utc/gmt argument via the mask
+      if (mask[3] === ":") {
+        if (
+          mask[0] === "U" &&
+          mask[1] === "T" &&
+          mask[2] === "C"
+        ) {
+          utc = true;
+          mask = mask.slice(4);
+        } else if (
+          mask[0] === "G" &&
+          mask[1] === "M" &&
+          mask[2] === "T"
+        ) {
+          gmt = true;
+          mask = mask.slice(4);
+        }
+      }
     }
+  } else {
+    mask = masks.default;
   }
 
   const _ = utc ? UTC_FNS : GMT_FNS;
@@ -159,18 +171,19 @@ export default function dateFormat(date, mask, utc, gmt) {
         : utc
           ? "UTC"
           : formatTimezone(date),
-    o: () =>
-      (o() > 0 ? "-" : "+") +
-      PAD_4[Math.floor(Math.abs(o()) / 60) * 100 + (Math.abs(o()) % 60)],
-    p: () =>
-      (o() > 0 ? "-" : "+") +
-      PAD_2[Math.floor(Math.abs(o()) / 60)] +
+    o: () => {
+      const timezoneOffset = o();
+      return (timezoneOffset > 0 ? "-" : "+") +
+      PAD_4[Math.floor(Math.abs(timezoneOffset) / 60) * 100 + (Math.abs(timezoneOffset) % 60)]
+    },
+    p: () => {
+      const timezoneOffset = o();
+      return (timezoneOffset > 0 ? "-" : "+") +
+      PAD_2[Math.floor(Math.abs(timezoneOffset) / 60)] +
       ":" +
-      PAD_2[Math.floor(Math.abs(o()) % 60)],
-    S: () =>
-      ["th", "st", "nd", "rd"][
-      d() % 10 > 3 ? 0 : (((d() % 100) - (d() % 10) != 10) * d()) % 10
-      ],
+      PAD_2[Math.floor(Math.abs(timezoneOffset) % 60)];
+    },
+    S: () => { return daySuffix[d()] },
     W: W,
     WW: () => PAD_2[W()],
     N: N,
@@ -199,7 +212,7 @@ export const masks = /** @type {Record<maskNames[number], string>} */ ({
   isoDate: "yyyy-mm-dd",
   isoTime: "HH:MM:ss",
   isoDateTime: "yyyy-mm-dd'T'HH:MM:sso",
-  isoUtcDateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'",
+  isoUtcDateTime: "yyyy-mm-dd'T'HH:MM:ss'Z'",
   expiresHeaderFormat: "ddd, dd mmm yyyy HH:MM:ss Z",
 });
 
@@ -253,6 +266,18 @@ export let i18n = /** @type {const} */ ({
     "December",
   ],
   timeNames: ["a", "p", "am", "pm", "A", "P", "AM", "PM"],
+});
+
+const daySuffix = new Array(32).fill(0).map((_, i) => {
+  if (i === 1 || i === 21 || i === 31) {
+    return "st";
+  } else if (i === 2 || i === 22) {
+    return "nd";
+  } else if (i === 3 || i === 23) {
+    return "rd";
+  } else {
+    return "th";
+  }
 });
 
 const PAD_2 = new Array(1e2).fill(0).map((_, i) => String(i).padStart(2, '0'));

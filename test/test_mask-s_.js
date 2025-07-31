@@ -24,4 +24,9 @@ describe("Mask: 'S'", function () {
     var d = dateFormat("2002-02-1", "S");
     strictEqual(d, "st");
   });
+
+  it("should format '2002-03-31' as 'st'", () => {
+    var d = dateFormat("2002-03-31", "S");
+    strictEqual(d, "st");
+  });
 });
