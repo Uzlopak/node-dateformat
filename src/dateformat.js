@@ -138,7 +138,7 @@ export default function dateFormat(date, mask, utc, gmt) {
     mm: () => PAD_2[m() + 1],
     mmm: () => i18n.monthNamesShort[m()],
     mmmm: () => i18n.monthNamesLong[m()],
-    yy: () => String(y()).slice(2),
+    yy: () => PAD_2[y() % 100],
     yyyy: () => PAD_4[y()],
     h: () => H() % 12 || 12,
     hh: () => PAD_2[(H() % 12 || 12)],

@@ -7,6 +7,8 @@ const masks = [
   "o",
   "N",
   "S",
+  "yy",
+  "yyyy",
   "shortDate",
   "fullDate",
   "longTime",
