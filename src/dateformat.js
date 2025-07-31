@@ -1,3 +1,5 @@
+// @ts-check
+
 /*
  * Date Format 1.2.3
  * (c) 2007-2009 Steven Levithan <stevenlevithan.com>
@@ -218,6 +220,11 @@ export let i18n = {
   timeNames: ["a", "p", "am", "pm", "A", "P", "AM", "PM"],
 };
 
+/**
+ * @param {number} val 
+ * @param {2|4} len 
+ * @returns {string}
+ */
 const pad = (val, len = 2) => String(val).padStart(len, '0');
 
 /**
@@ -260,10 +267,13 @@ const getDayName = ({ y, m, d, _, dayName, short = false }) => {
 const firstThursdays = new Map();
 
 /**
- * @type {(0|1|2|3|4|5|6)[]}
+ * @type {(1|2|3|4|5|6|7)[]}
  */
 const firstDaysOfWeekLookup = [1, 7, 6, 5, 4, 3, 2];
 
+/**
+ * @type {(0|1|2|3|4|5|6)[]}
+ */
 const thursdaySameWeekLookup = [6, 0, 1, 2, 3, 4, 5];
 
 /**
@@ -288,7 +298,7 @@ const getWeek = (date) => {
 
   // Change date to Thursday same week
   targetThursday.setDate(
-    targetThursday.getDate() - thursdaySameWeekLookup[targetThursday.getDay()] + 3
+    d - thursdaySameWeekLookup[targetThursday.getDay()] + 3
   );
 
   let firstThursday = firstThursdays.get(Y);
@@ -311,6 +321,8 @@ const getWeek = (date) => {
   return 1 + Math.floor(weekDiff);
 };
 
+const dayOfWeekLookup = [7, 1, 2, 3, 4, 5, 6];
+
 /**
  * Get ISO-8601 numeric representation of the day of the week
  * 1 (for Monday) through 7 (for Sunday)
@@ -319,11 +331,7 @@ const getWeek = (date) => {
  * @return {Number}
  */
 const getDayOfWeek = (date) => {
-  let dow = date.getDay();
-  if (dow === 0) {
-    dow = 7;
-  }
-  return dow;
+  return dayOfWeekLookup[date.getDay()];
 };
 
 /**
