@@ -76,27 +76,27 @@ export default function dateFormat(date, mask, utc, gmt) {
   const flags = {
     d: d,
     dd: () => PAD_2[d()],
-    ddd: () => i18n.dayNames[D()],
+    ddd: () => i18n.dayNamesShort[D()],
     DDD: () => getDayName({
       y: y(),
       m: m(),
       d: d(),
       _: _(),
-      dayName: i18n.dayNames[D()],
+      dayName: i18n.dayNamesShort[D()],
       short: true
     }),
-    dddd: () => i18n.dayNames[D() + 7],
+    dddd: () => i18n.dayNamesLong[D()],
     DDDD: () => getDayName({
       y: y(),
       m: m(),
       d: d(),
       _: _(),
-      dayName: i18n.dayNames[D() + 7]
+      dayName: i18n.dayNamesLong[D()]
     }),
     m: () => m() + 1,
     mm: () => PAD_2[m() + 1],
-    mmm: () => i18n.monthNames[m()],
-    mmmm: () => i18n.monthNames[m() + 12],
+    mmm: () => i18n.monthNamesShort[m()],
+    mmmm: () => i18n.monthNamesLong[m()],
     yy: () => String(y()).slice(2),
     yyyy: () => PAD_4[y()],
     h: () => H() % 12 || 12,
@@ -175,7 +175,7 @@ export let masks = {
 
 // Internationalization strings
 export let i18n = {
-  dayNames: [
+  dayNamesShort: [
     "Sun",
     "Mon",
     "Tue",
@@ -183,6 +183,8 @@ export let i18n = {
     "Thu",
     "Fri",
     "Sat",
+  ],
+  dayNamesLong: [
     "Sunday",
     "Monday",
     "Tuesday",
@@ -191,7 +193,7 @@ export let i18n = {
     "Friday",
     "Saturday",
   ],
-  monthNames: [
+  monthNamesShort: [
     "Jan",
     "Feb",
     "Mar",
@@ -204,6 +206,8 @@ export let i18n = {
     "Oct",
     "Nov",
     "Dec",
+  ],
+  monthNamesLong: [
     "January",
     "February",
     "March",
