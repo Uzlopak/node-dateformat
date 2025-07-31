@@ -19,6 +19,30 @@ const token = /d{1,4}|D{3,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|W{1,2}|[LlopSZN]|"[^
 const timezone = /\b(?:[A-Z]{1,3}[A-Z][TC])(?:[-+]\d{4})?|((?:Australian )?(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time)\b/g;
 const timezoneClip = /[^-+\dA-Z]/g;
 
+const UTC_FNS = {
+  getDate: Date.prototype.getUTCDate.call.bind(Date.prototype.getUTCDate),
+  getDay: Date.prototype.getUTCDay.call.bind(Date.prototype.getUTCDay),
+  getMonth: Date.prototype.getUTCMonth.call.bind(Date.prototype.getUTCMonth),
+  getFullYear: Date.prototype.getUTCFullYear.call.bind(Date.prototype.getUTCFullYear),
+  getHours: Date.prototype.getUTCHours.call.bind(Date.prototype.getUTCHours),
+  getMinutes: Date.prototype.getUTCMinutes.call.bind(Date.prototype.getUTCMinutes),
+  getSeconds: Date.prototype.getUTCSeconds.call.bind(Date.prototype.getUTCSeconds),
+  getMilliseconds: Date.prototype.getUTCMilliseconds.call.bind(Date.prototype.getUTCMilliseconds),
+  getTimezoneOffset: () => 0, // UTC does not have a timezone offset
+}
+
+const GMT_FNS = {
+  getDate: Date.prototype.getDate.call.bind(Date.prototype.getDate),
+  getDay: Date.prototype.getDay.call.bind(Date.prototype.getDay),
+  getMonth: Date.prototype.getMonth.call.bind(Date.prototype.getMonth),
+  getFullYear: Date.prototype.getFullYear.call.bind(Date.prototype.getFullYear),
+  getHours: Date.prototype.getHours.call.bind(Date.prototype.getHours),
+  getMinutes: Date.prototype.getMinutes.call.bind(Date.prototype.getMinutes),
+  getSeconds: Date.prototype.getSeconds.call.bind(Date.prototype.getSeconds),
+  getMilliseconds: Date.prototype.getUTCMilliseconds.call.bind(Date.prototype.getUTCMilliseconds),
+  getTimezoneOffset: Date.prototype.getTimezoneOffset.call.bind(Date.prototype.getTimezoneOffset),
+}
+
 /**
  * @param {string | number | Date} date
  * @param {string} mask
@@ -46,9 +70,13 @@ export default function dateFormat(date, mask, utc, gmt) {
     throw TypeError("Invalid date");
   }
 
-  mask = String(
-    masks[mask] || mask || masks["default"]
-  );
+  if (mask) {
+    mask = maskNames.includes(mask)
+      ? masks[mask]
+      : mask;
+  } else {
+    mask = masks["default"];
+  }
 
   // Allow setting the utc/gmt argument via the mask
   const maskSlice = mask.slice(0, 4);
@@ -60,16 +88,16 @@ export default function dateFormat(date, mask, utc, gmt) {
     }
   }
 
-  const _ = () => (utc ? "getUTC" : "get");
-  const d = () => date[_() + "Date"]();
-  const D = () => date[_() + "Day"]();
-  const m = () => date[_() + "Month"]();
-  const y = () => date[_() + "FullYear"]();
-  const H = () => date[_() + "Hours"]();
-  const M = () => date[_() + "Minutes"]();
-  const s = () => date[_() + "Seconds"]();
-  const L = () => date[_() + "Milliseconds"]();
-  const o = () => (utc ? 0 : date.getTimezoneOffset());
+  const _ = utc ? UTC_FNS : GMT_FNS;
+  const d = () => _.getDate(date);
+  const D = () => _.getDay(date);
+  const m = () => _.getMonth(date);
+  const y = () => _.getFullYear(date);
+  const H = () => _.getHours(date);
+  const M = () => _.getMinutes(date);
+  const s = () => _.getSeconds(date);
+  const L = () => _.getMilliseconds(date);
+  const o = () => _.getTimezoneOffset(date);
   const W = () => getWeek(date);
   const N = () => getDayOfWeek(date);
 
@@ -81,7 +109,7 @@ export default function dateFormat(date, mask, utc, gmt) {
       y: y(),
       m: m(),
       d: d(),
-      _: _(),
+      _: _,
       dayName: i18n.dayNamesShort[D()],
       short: true
     }),
@@ -90,7 +118,7 @@ export default function dateFormat(date, mask, utc, gmt) {
       y: y(),
       m: m(),
       d: d(),
-      _: _(),
+      _: _,
       dayName: i18n.dayNamesLong[D()]
     }),
     m: () => m() + 1,
@@ -156,7 +184,9 @@ export default function dateFormat(date, mask, utc, gmt) {
   });
 }
 
-export let masks = {
+const maskNames = /** @type {const} */(['default', 'shortDate', 'paddedShortDate', 'mediumDate', 'longDate', 'fullDate', 'shortTime', 'mediumTime', 'longTime', 'isoDate', 'isoTime', 'isoDateTime', 'isoUtcDateTime', 'expiresHeaderFormat']);
+
+export const masks = /** @type {Record<maskNames[number], string>} */ ({
   default: "ddd mmm dd yyyy HH:MM:ss",
   shortDate: "m/d/yy",
   paddedShortDate: "mm/dd/yyyy",
@@ -171,10 +201,11 @@ export let masks = {
   isoDateTime: "yyyy-mm-dd'T'HH:MM:sso",
   isoUtcDateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss'Z'",
   expiresHeaderFormat: "ddd, dd mmm yyyy HH:MM:ss Z",
-};
+});
+
 
 // Internationalization strings
-export let i18n = {
+export let i18n = /** @type {const} */ ({
   dayNamesShort: [
     "Sun",
     "Mon",
@@ -222,7 +253,7 @@ export let i18n = {
     "December",
   ],
   timeNames: ["a", "p", "am", "pm", "A", "P", "AM", "PM"],
-};
+});
 
 const PAD_2 = new Array(1e2).fill(0).map((_, i) => String(i).padStart(2, '0'));
 const PAD_3 = new Array(1e3).fill(0).map((_, i) => String(i).padStart(3, '0'));
@@ -237,18 +268,18 @@ const PAD_4 = new Array(1e4).fill(0).map((_, i) => String(i).padStart(4, '0'));
 const getDayName = ({ y, m, d, _, dayName, short = false }) => {
   const today = new Date();
   const yesterday = new Date();
-  yesterday.setDate(yesterday[_ + 'Date']() - 1);
+  yesterday.setDate(_.getDate(yesterday) - 1);
   const tomorrow = new Date();
-  tomorrow.setDate(tomorrow[_ + 'Date']() + 1);
-  const today_d = () => today[_ + 'Date']();
-  const today_m = () => today[_ + 'Month']();
-  const today_y = () => today[_ + 'FullYear']();
-  const yesterday_d = () => yesterday[_ + 'Date']();
-  const yesterday_m = () => yesterday[_ + 'Month']();
-  const yesterday_y = () => yesterday[_ + 'FullYear']();
-  const tomorrow_d = () => tomorrow[_ + 'Date']();
-  const tomorrow_m = () => tomorrow[_ + 'Month']();
-  const tomorrow_y = () => tomorrow[_ + 'FullYear']();
+  tomorrow.setDate(_.getDate(tomorrow)+ 1);
+  const today_d = () => _.getDate(today);
+  const today_m = () => _.getMonth(today);
+  const today_y = () => _.getFullYear(today);
+  const yesterday_d = () => _.getDate(yesterday);
+  const yesterday_m = () => _.getMonth(yesterday);
+  const yesterday_y = () => _.getFullYear(yesterday);
+  const tomorrow_d = () => _.getDate(tomorrow);
+  const tomorrow_m = () => _.getMonth(tomorrow);
+  const tomorrow_y = () => _.getFullYear(tomorrow);
 
   if (today_y() === y && today_m() === m && today_d() === d) {
     return short ? 'Tdy' : 'Today';
