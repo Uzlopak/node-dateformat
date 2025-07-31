@@ -149,7 +149,7 @@ export default function dateFormat(date, mask, utc, gmt) {
     s: s,
     ss: () => PAD_2[s()],
     l: () => PAD_3[L()],
-    L: () => PAD_2[Math.floor(L() / 10)],
+    L: () => MILLISECONDS_L[L()],
     t: () =>
       H() < 12
         ? i18n.timeNames[0]
@@ -217,7 +217,6 @@ export const masks = /** @type {Record<maskNames[number], string>} */ ({
   expiresHeaderFormat: "ddd, dd mmm yyyy HH:MM:ss Z",
 });
 
-
 // Internationalization strings
 export let i18n = /** @type {const} */ ({
   dayNamesShort: [
@@ -284,6 +283,7 @@ const daySuffix = new Array(32).fill(0).map((_, i) => {
 const PAD_2 = new Array(1e2).fill(0).map((_, i) => String(i).padStart(2, '0'));
 const PAD_3 = new Array(1e3).fill(0).map((_, i) => String(i).padStart(3, '0'));
 const PAD_4 = new Array(1e4).fill(0).map((_, i) => String(i).padStart(4, '0'));
+const MILLISECONDS_L = new Array(1e3).fill(0).map((_, i) => String(i).padStart(3, '0').slice(0, 2));
 
 /**
  * Get day name
