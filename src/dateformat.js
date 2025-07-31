@@ -23,7 +23,7 @@ const timezoneClip = /[^-+\dA-Z]/g;
  * @param {boolean} utc
  * @param {boolean} gmt
  */
-export default function dateFormat (date, mask, utc, gmt) {
+export default function dateFormat(date, mask, utc, gmt) {
   // You can't provide utc if you skip other args (use the 'UTC:' mask prefix)
   if (
     arguments.length === 1 &&
@@ -139,10 +139,10 @@ export default function dateFormat (date, mask, utc, gmt) {
       pad(Math.floor(Math.abs(o()) % 60), 2),
     S: () =>
       ["th", "st", "nd", "rd"][
-        d() % 10 > 3 ? 0 : (((d() % 100) - (d() % 10) != 10) * d()) % 10
+      d() % 10 > 3 ? 0 : (((d() % 100) - (d() % 10) != 10) * d()) % 10
       ],
     W: () => W(),
-    WW: () => pad( W() ),
+    WW: () => pad(W()),
     N: () => N(),
   };
 
@@ -255,6 +255,18 @@ const getDayName = ({ y, m, d, _, dayName, short = false }) => {
 };
 
 /**
+ * @type {Map<number, Date>}
+ */
+const firstThursdays = new Map();
+
+/**
+ * @type {(0|1|2|3|4|5|6)[]}
+ */
+const firstDaysOfWeekLookup = [1, 7, 6, 5, 4, 3, 2];
+
+const thursdaySameWeekLookup = [6, 0, 1, 2, 3, 4, 5];
+
+/**
  * Get the ISO 8601 week number
  * Based on comments from
  * http://techblog.procurios.nl/k/n618/news/view/33796/14863/Calculate-ISO-8601-week-and-year-in-javascript.html
@@ -263,25 +275,31 @@ const getDayName = ({ y, m, d, _, dayName, short = false }) => {
  * @return {Number}
  */
 const getWeek = (date) => {
+  const Y = date.getFullYear();
+  const m = date.getMonth();
+  const d = date.getDate();
+
   // Remove time components of date
   const targetThursday = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
+    Y,
+    m,
+    d
   );
 
   // Change date to Thursday same week
   targetThursday.setDate(
-    targetThursday.getDate() - ((targetThursday.getDay() + 6) % 7) + 3
+    targetThursday.getDate() - thursdaySameWeekLookup[targetThursday.getDay()] + 3
   );
 
-  // Take January 4th as it is always in week 1 (see ISO 8601)
-  const firstThursday = new Date(targetThursday.getFullYear(), 0, 4);
+  let firstThursday = firstThursdays.get(Y);
+  if (!firstThursday) {
+    // Take January 4th as it is always in week 1 (see ISO 8601)
+    firstThursday = new Date(Y, 0, 4);
 
-  // Change date to Thursday same week
-  firstThursday.setDate(
-    firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3
-  );
+    // Change date to Thursday same week
+    firstThursday.setDate(firstDaysOfWeekLookup[firstThursday.getDay()]);
+    firstThursdays.set(Y, firstThursday);
+  }
 
   // Check if daylight-saving-time-switch occurred and correct for it
   const ds =

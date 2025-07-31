@@ -15,8 +15,9 @@ const masks = [
 const bench = new Bench({ name: 'simple benchmark', time: 100 })
 
 masks.forEach((mask) => {
+  const date = new Date();
   bench.add(mask, () => {
-    dateFormat(new Date(), mask);
+    dateFormat(date, mask);
   });
 });
 
