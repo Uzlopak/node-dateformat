@@ -11,6 +11,7 @@ const masks = [
   "L",
   "yy",
   "yyyy",
+  "isoUtcDateTime",
   "shortDate",
   "fullDate",
   "longTime",
