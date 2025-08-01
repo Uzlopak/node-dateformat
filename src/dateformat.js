@@ -114,7 +114,7 @@ export default function dateFormat(date, mask, utc, gmt) {
   const N = () => getDayOfWeek(date);
 
   const flags = {
-    d: d,
+    d: () => NO_PAD[d()],
     dd: () => PAD_2[d()],
     ddd: () => i18n.dayNamesShort[D()],
     DDD: () => getDayName({
@@ -134,19 +134,19 @@ export default function dateFormat(date, mask, utc, gmt) {
       D: D,
       short: false
     }),
-    m: () => m() + 1,
+    m: () => NO_PAD[m() + 1],
     mm: () => PAD_2[m() + 1],
     mmm: () => i18n.monthNamesShort[m()],
     mmmm: () => i18n.monthNamesLong[m()],
     yy: () => PAD_2[y() % 100],
     yyyy: () => PAD_4[y()],
-    h: () => H() % 12 || 12,
+    h: () => HOURS_H[H()],
     hh: () => PAD_2[(H() % 12 || 12)],
-    H: H,
+    H: () => NO_PAD[H()],
     HH: () => PAD_2[H()],
-    M: M,
+    M: () => NO_PAD[M()],
     MM: () => PAD_2[M()],
-    s: s,
+    s: () => NO_PAD[s()],
     ss: () => PAD_2[s()],
     l: () => PAD_3[L()],
     L: () => MILLISECONDS_L[L()],
@@ -280,9 +280,12 @@ const daySuffix = new Array(32).fill(0).map((_, i) => {
   }
 });
 
+const NO_PAD = new Array(1e3).fill(0).map((_, i) => String(i));
 const PAD_2 = new Array(1e2).fill(0).map((_, i) => String(i).padStart(2, '0'));
 const PAD_3 = new Array(1e3).fill(0).map((_, i) => String(i).padStart(3, '0'));
 const PAD_4 = new Array(1e4).fill(0).map((_, i) => String(i).padStart(4, '0'));
+
+const HOURS_H = new Array(24).fill(0).map((_, i) => String(i % 12 || 12));
 const MILLISECONDS_L = new Array(1e3).fill(0).map((_, i) => String(i).padStart(3, '0').slice(0, 2));
 
 /**

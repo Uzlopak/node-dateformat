@@ -6,6 +6,7 @@ const masks = [
   "W",
   "o",
   "N",
+  "H",
   "S",
   "L",
   "yy",
