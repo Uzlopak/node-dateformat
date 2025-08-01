@@ -1,5 +1,5 @@
 import { Bench } from "tinybench"
-import dateFormat from "../src/dateformat.js";
+import dateFormat from "../lib/dateformat.js";
 
 const masks = [
   "d",
