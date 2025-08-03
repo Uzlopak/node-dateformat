@@ -67,7 +67,7 @@ const getWeek = (date) => {
   let firstThursday = firstThursdays.get(Y);
   if (!firstThursday) {
     // Take January 4th as it is always in week 1 (see ISO 8601)
-    firstThursday = new Date(Y, 0, 4);
+    firstThursday = new Date(targetThursday.getFullYear(), 0, 4);
 
     // Change date to Thursday same week
     firstThursday.setDate(firstDaysOfWeekLookup[firstThursday.getDay()]);
