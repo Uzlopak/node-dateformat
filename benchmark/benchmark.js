@@ -11,11 +11,11 @@ const masks = [
   "L",
   "yy",
   "yyyy",
-  "isoUtcDateTime",
-  "shortDate",
-  "fullDate",
-  "longTime",
   "default",
+  "shortDate", "paddedShortDate", "mediumDate", "longDate", "fullDate", "isoDate",
+  "shortTime", "mediumTime", "longTime", "isoTime",
+  "isoDateTime", "isoUtcDateTime",
+  "expiresHeaderFormat"
 ];
 
 const bench = new Bench({ name: 'simple benchmark', time: 100 })
