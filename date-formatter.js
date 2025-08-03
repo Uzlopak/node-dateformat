@@ -145,6 +145,26 @@ const getDayName = ({ date, D, short }) => {
   return short ? i18n.dayNamesShort[D()] : i18n.dayNamesLong[D()];
 };
 
+
+const maskNames = /** @type {const} */(['default', 'shortDate', 'paddedShortDate', 'mediumDate', 'longDate', 'fullDate', 'shortTime', 'mediumTime', 'longTime', 'isoDate', 'isoTime', 'isoDateTime', 'isoUtcDateTime', 'expiresHeaderFormat']);
+
+export const masks = /** @type {Record<maskNames[number], string>} */ ({
+  default: "ddd mmm dd yyyy HH:MM:ss",
+  shortDate: "m/d/yy",
+  paddedShortDate: "mm/dd/yyyy",
+  mediumDate: "mmm d, yyyy",
+  longDate: "mmmm d, yyyy",
+  fullDate: "dddd, mmmm d, yyyy",
+  shortTime: "h:MM TT",
+  mediumTime: "h:MM:ss TT",
+  longTime: "h:MM:ss TT Z",
+  isoDate: "yyyy-mm-dd",
+  isoTime: "HH:MM:ss",
+  isoDateTime: "yyyy-mm-dd'T'HH:MM:sso",
+  isoUtcDateTime: "yyyy-mm-dd'T'HH:MM:ss'Z'",
+  expiresHeaderFormat: "ddd, dd mmm yyyy HH:MM:ss Z",
+});
+
 const UTC_FNS = {
   getDate: Date.prototype.getUTCDate.call.bind(Date.prototype.getUTCDate),
   getDay: Date.prototype.getUTCDay.call.bind(Date.prototype.getUTCDay),
@@ -172,11 +192,13 @@ const GMT_FNS = {
 export class DateFormatter {
   #tokenRE = /d{1,4}|D{3,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|W{1,2}|[LlopSZN]|"[^"]*"|'[^']*'/g;
 
+  /**
+   * @type {'GMT'|'UTC'}
+   */
   #mode = 'GMT';
 
   #mask = '';
 
-  #fns = GMT_FNS;
   #d = GMT_FNS.getDate;
   #D = GMT_FNS.getDay;
   #H = GMT_FNS.getHours;
@@ -239,10 +261,53 @@ export class DateFormatter {
     timeNames: ["a", "p", "am", "pm", "A", "P", "AM", "PM"],
   })
 
-  constructor(mask, mode = 'GMT') {
-    this.#mask = mask
+  #format = (date) => {
+    date = this.#validateDate(date);
 
-    this.#mode = mode;
+    let result = '';
+
+    for (let i = 0; i < this.#tokenFns.length; ++i) {
+      result += this.#tokenFns[i](date);
+    }
+
+    return result;
+  }
+
+  constructor(mask, mode = 'GMT') {
+    if (typeof mode === 'string') {
+      mode = mode.toUpperCase();
+    } else if (typeof mask === 'string') {
+      if (mask === 'isoUtcDateTime') {
+        this.#mode = 'UTC';
+        // Allow setting the utc/gmt argument via the mask
+      } else if (mask[3] === ":") {
+        if (
+          mask[0] === "U" &&
+          mask[1] === "T" &&
+          mask[2] === "C"
+        ) {
+          this.#mode = 'UTC';
+          mask = mask.slice(4);
+        } else if (
+          mask[0] === "G" &&
+          mask[1] === "M" &&
+          mask[2] === "T"
+        ) {
+          this.#mode = 'GMT';
+          mask = mask.slice(4);
+        }
+      }
+    }
+
+    if (typeof mask === 'string') {
+      if (maskNames.includes(mask)) {
+        this.#mask = masks[mask];
+      } else {
+        this.#mask = mask
+      }
+    } else if (typeof mask === "function") {
+      this.#format = mask;
+    }
 
     if (this.#mode === 'UTC') {
       this.#d = UTC_FNS.getDate;
@@ -254,7 +319,6 @@ export class DateFormatter {
       this.#o = UTC_FNS.getTimezoneOffset;
       this.#s = UTC_FNS.getSeconds;
       this.#yyyy = UTC_FNS.getFullYear;
-      this.#fns = UTC_FNS;
     }
 
     this.#tokenize()
@@ -403,16 +467,8 @@ export class DateFormatter {
    * @param {Date} date 
    * @returns {string}
    */
-  format(date) {
-    date = this.#validateDate(date);
-
-    let result = '';
-
-    for (let i = 0; i < this.#tokenFns.length; ++i) {
-      result += this.#tokenFns[i](date);
-    }
-
-    return result;
+  get format() {
+    return this.#format;
   }
 
   /**
@@ -827,5 +883,5 @@ console.assert(new DateFormatter(mask).W(date) === '31', 'W')
 console.assert(new DateFormatter(mask).WW(date) === '31', 'WW')
 console.assert(new DateFormatter(mask).yy(date) === '25', 'yy')
 console.assert(new DateFormatter(mask).yyyy(date) === '2025', 'yyyy')
-
-console.log(new DateFormatter(mask).DDDD(date));
+console.assert(new DateFormatter('default').format(date) === 'Sat Aug 02 2025 12:34:56', 'format: default');
+console.assert(new DateFormatter('longDate').format(date) === 'August 2, 2025', 'format: longDate');
