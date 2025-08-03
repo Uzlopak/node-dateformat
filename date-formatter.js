@@ -148,7 +148,7 @@ const getDayName = ({ date, D, short }) => {
 
 const standardMaskNames = /** @type {const} */(['default', 'shortDate', 'paddedShortDate', 'mediumDate', 'longDate', 'fullDate', 'shortTime', 'mediumTime', 'longTime', 'isoDate', 'isoTime', 'isoDateTime', 'isoUtcDateTime', 'expiresHeaderFormat']);
 
-export const standardMasks = /** @type {Record<maskNames[number], string>} */ ({
+export const standardMasks = /** @type {Record<maskNames[number], (this: DateFormatter, date:Date) => string>} */ ({
   default: function (date) { return `${this.ddd(date)} ${this.mmm(date)} ${this.dd(date)} ${this.yyyy(date)} ${this.HH(date)}:${this.MM(date)}:${this.ss(date)}` },
   shortDate: function (date) { return `${this.m(date)}/${this.d(date)}/${this.yy(date)}` },
   paddedShortDate: function (date) { return `${this.mm(date)}/${this.dd(date)}/${this.yyyy(date)}` },
@@ -157,10 +157,10 @@ export const standardMasks = /** @type {Record<maskNames[number], string>} */ ({
   fullDate: function (date) { return `${this.dddd(date)}, ${this.mmmm(date)} ${this.d(date)}, ${this.yyyy(date)}` },
   shortTime: function (date) { return `${this.h(date)}:${this.MM(date)} ${this.TT(date)}` },
   mediumTime: function (date) { return `${this.h(date)}:${this.MM(date)}:${this.ss(date)} ${this.TT(date)}` },
-  longTime: function (date) { return `${this.h(date)}:${this.MM(date)}:${this.ss(date)} ${this.TT(date)} ${this.o(date)}` },
+  longTime: function (date) { return `${this.h(date)}:${this.MM(date)}:${this.ss(date)} ${this.TT(date)} ${this.Z(date)}` },
   isoDate: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}` },
   isoTime: function (date) { return `${this.HH(date)}:${this.MM(date)}:${this.ss(date)}` },
-  isoDateTime: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}T${this.HH(date)}:${this.MM(date)}:${this.ss(date)}${this.o(date)}` },
+  isoDateTime: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}T${this.HH(date)}:${this.MM(date)}:${this.ss(date)}${this.Z(date)}` },
   isoUtcDateTime: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}T${this.HH(date)}:${this.MM(date)}:${this.ss(date)}Z` },
   expiresHeaderFormat: function (date) { return `${this.ddd(date)}, ${this.dd(date)} ${this.mmm(date)} ${this.yyyy(date)} ${this.HH(date)}:${this.MM(date)}:${this.ss(date)} ${this.o(date)}` },
 });
@@ -428,6 +428,9 @@ export class DateFormatter {
           break;
         case "yyyy":
           this.#tokenFns.push(this.yyyy.bind(this));
+          break;
+        case "Z":
+          this.#tokenFns.push(this.Z.bind(this));
           break;
         default:
           if (match[0][0] === '\'' && match[0][match[0].length - 1] === '\'') {
@@ -844,8 +847,15 @@ export class DateFormatter {
     return PAD_4[this.#yyyy(date)];
   }
 
-  get tokens() {
-    return this.#tokenFns;
+  Z(date) {
+    if (this.#mode === 'UTC') {
+      return 'Z';
+    }
+    const offset = this.#o(date);
+    if (offset === 0) {
+      return 'UTC';
+    }
+    return `GMT${this.o(date)}`;
   }
 }
 
@@ -870,7 +880,6 @@ console.assert(new DateFormatter(mask).MM(date) === '34'), 'MM';
 console.assert(new DateFormatter(mask).mmm(date) === 'Aug', 'mmm')
 console.assert(new DateFormatter(mask).mmmm(date) === 'August', 'mmmm')
 console.assert(new DateFormatter(mask).N(date) === '6', 'N')
-console.assert(new DateFormatter(mask).o(date) === '+0200', 'o')
 console.assert(new DateFormatter(mask).o(date) === '+0200'), 'o';
 console.assert(new DateFormatter(mask).p(date) === '+02:00', 'p')
 console.assert(new DateFormatter(mask).s(date) === '56'), 's';
@@ -886,3 +895,4 @@ console.assert(new DateFormatter(mask).yy(date) === '25', 'yy')
 console.assert(new DateFormatter(mask).yyyy(date) === '2025', 'yyyy')
 console.assert(new DateFormatter('default').format(date) === 'Sat Aug 02 2025 12:34:56', 'format: default');
 console.assert(new DateFormatter('longDate').format(date) === 'August 2, 2025', 'format: longDate');
+console.assert(new DateFormatter('longTime').format(date) === '12:34:56 PM GMT+0200', 'format: longDate');
