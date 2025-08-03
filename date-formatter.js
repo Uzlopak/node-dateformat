@@ -146,23 +146,23 @@ const getDayName = ({ date, D, short }) => {
 };
 
 
-const maskNames = /** @type {const} */(['default', 'shortDate', 'paddedShortDate', 'mediumDate', 'longDate', 'fullDate', 'shortTime', 'mediumTime', 'longTime', 'isoDate', 'isoTime', 'isoDateTime', 'isoUtcDateTime', 'expiresHeaderFormat']);
+const standardMaskNames = /** @type {const} */(['default', 'shortDate', 'paddedShortDate', 'mediumDate', 'longDate', 'fullDate', 'shortTime', 'mediumTime', 'longTime', 'isoDate', 'isoTime', 'isoDateTime', 'isoUtcDateTime', 'expiresHeaderFormat']);
 
-export const masks = /** @type {Record<maskNames[number], string>} */ ({
-  default: "ddd mmm dd yyyy HH:MM:ss",
-  shortDate: "m/d/yy",
-  paddedShortDate: "mm/dd/yyyy",
-  mediumDate: "mmm d, yyyy",
-  longDate: "mmmm d, yyyy",
-  fullDate: "dddd, mmmm d, yyyy",
-  shortTime: "h:MM TT",
-  mediumTime: "h:MM:ss TT",
-  longTime: "h:MM:ss TT Z",
-  isoDate: "yyyy-mm-dd",
-  isoTime: "HH:MM:ss",
-  isoDateTime: "yyyy-mm-dd'T'HH:MM:sso",
-  isoUtcDateTime: "yyyy-mm-dd'T'HH:MM:ss'Z'",
-  expiresHeaderFormat: "ddd, dd mmm yyyy HH:MM:ss Z",
+export const standardMasks = /** @type {Record<maskNames[number], string>} */ ({
+  default: function (date) { return `${this.ddd(date)} ${this.mmm(date)} ${this.dd(date)} ${this.yyyy(date)} ${this.HH(date)}:${this.MM(date)}:${this.ss(date)}` },
+  shortDate: function (date) { return `${this.m(date)}/${this.d(date)}/${this.yy(date)}` },
+  paddedShortDate: function (date) { return `${this.mm(date)}/${this.dd(date)}/${this.yyyy(date)}` },
+  mediumDate: function (date) { return `${this.mmm(date)} ${this.d(date)}, ${this.yyyy(date)}` },
+  longDate: function (date) { return `${this.mmmm(date)} ${this.d(date)}, ${this.yyyy(date)}` },
+  fullDate: function (date) { return `${this.dddd(date)}, ${this.mmmm(date)} ${this.d(date)}, ${this.yyyy(date)}` },
+  shortTime: function (date) { return `${this.h(date)}:${this.MM(date)} ${this.TT(date)}` },
+  mediumTime: function (date) { return `${this.h(date)}:${this.MM(date)}:${this.ss(date)} ${this.TT(date)}` },
+  longTime: function (date) { return `${this.h(date)}:${this.MM(date)}:${this.ss(date)} ${this.TT(date)} ${this.o(date)}` },
+  isoDate: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}` },
+  isoTime: function (date) { return `${this.HH(date)}:${this.MM(date)}:${this.ss(date)}` },
+  isoDateTime: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}T${this.HH(date)}:${this.MM(date)}:${this.ss(date)}${this.o(date)}` },
+  isoUtcDateTime: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}T${this.HH(date)}:${this.MM(date)}:${this.ss(date)}Z` },
+  expiresHeaderFormat: function (date) { return `${this.ddd(date)}, ${this.dd(date)} ${this.mmm(date)} ${this.yyyy(date)} ${this.HH(date)}:${this.MM(date)}:${this.ss(date)} ${this.o(date)}` },
 });
 
 const UTC_FNS = {
@@ -300,13 +300,16 @@ export class DateFormatter {
     }
 
     if (typeof mask === 'string') {
-      if (maskNames.includes(mask)) {
-        this.#mask = masks[mask];
+      if (standardMaskNames.includes(mask)) {
+        this.#format = standardMasks[mask];
       } else {
         this.#mask = mask
+        this.#tokenize()
       }
     } else if (typeof mask === "function") {
       this.#format = mask;
+    } else {
+      throw TypeError("Mask must be a string or a function");
     }
 
     if (this.#mode === 'UTC') {
@@ -320,8 +323,6 @@ export class DateFormatter {
       this.#s = UTC_FNS.getSeconds;
       this.#yyyy = UTC_FNS.getFullYear;
     }
-
-    this.#tokenize()
   }
 
   #tokenize() {
