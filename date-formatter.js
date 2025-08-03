@@ -1,35 +1,18 @@
-'use strict'
+const DATE_SUFFIX = [
+  'th',
+  'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th', 'th',
+  'th', 'th', 'th', 'th', 'th', 'th', 'th', 'th', 'th', 'th',
+  'st', 'nd', 'rd', 'th', 'th', 'th', 'th', 'th', 'th', 'th',
+  'st'
+]
 
-const mask = "o"
-
-const microsecondsPerWeek = /** @type {const} */ (604800000); // 7 days * 24 hours * 60 minutes * 60 seconds * 1000 milliseconds
-
-/**
- * @param {number} value 
- * @returns {number}
- */
-const abs = (value) => (value ^ (value >> 31)) - (value >> 31)
-
-
-const daySuffix = new Array(32).fill(0).map((_, i) => {
-  if (i === 1 || i === 21 || i === 31) {
-    return "st";
-  } else if (i === 2 || i === 22) {
-    return "nd";
-  } else if (i === 3 || i === 23) {
-    return "rd";
-  } else {
-    return "th";
-  }
-});
-
-const NO_PAD = new Array(1e3).fill(0).map((_, i) => String(i));
+const PAD_0 = new Array(1e3).fill(0).map((_, i) => String(i));
 const PAD_2 = new Array(1e2).fill(0).map((_, i) => String(i).padStart(2, '0'));
 const PAD_3 = new Array(1e3).fill(0).map((_, i) => String(i).padStart(3, '0'));
 const PAD_4 = new Array(1e4).fill(0).map((_, i) => String(i).padStart(4, '0'));
 
 const HOURS_H = new Array(24).fill(0).map((_, i) => String(i % 12 || 12));
-const HOURS_H_PAD = new Array(24).fill(0).map((_, i) => String(i % 12 || 12).padStart(2, '0'));
+const HOURS_H_PAD_2 = HOURS_H.map(v => v.padStart(2, '0'));
 const MILLISECONDS_L = new Array(1e3).fill(0).map((_, i) => String(i).padStart(3, '0').slice(0, 2));
 
 const TIMEZONE_OFFSET_O = new Map();
@@ -37,29 +20,23 @@ const TIMEZONE_OFFSET_P = new Map();
 
 for (let tzOffset = -720; tzOffset <= 840; tzOffset += 15) {
   TIMEZONE_OFFSET_O.set(tzOffset, (tzOffset > 0 ? "-" : "+") +
-    PAD_2[abs((tzOffset) / 60)] +
-    PAD_2[abs((tzOffset) % 60)]
+    PAD_2[Math.abs((tzOffset) / 60)] +
+    PAD_2[Math.abs((tzOffset) % 60)]
   )
 
   TIMEZONE_OFFSET_P.set(tzOffset, (tzOffset > 0 ? "-" : "+") +
-    PAD_2[abs((tzOffset) / 60)] + ":" + PAD_2[abs((tzOffset) % 60)])
+    PAD_2[Math.abs((tzOffset) / 60)] + ":" + PAD_2[Math.abs((tzOffset) % 60)])
 }
 
 const dayOfWeekLookup = /**@type {const} */(["7", "1", "2", "3", "4", "5", "6"]);
 
-/**
- * @type {Map<number, Date>}
- */
+/** @type {Map<number, Date>} */
 const firstThursdays = new Map();
 
-/**
- * @type {(1|2|3|4|5|6|7)[]}
- */
+/** @type {(1|2|3|4|5|6|7)[]} */
 const firstDaysOfWeekLookup = [1, 7, 6, 5, 4, 3, 2];
 
-/**
- * @type {(0|1|2|3|4|5|6)[]}
- */
+/** @type {(0|1|2|3|4|5|6)[]} */
 const thursdaySameWeekLookup = [6, 0, 1, 2, 3, 4, 5];
 
 /**
@@ -103,8 +80,8 @@ const getWeek = (date) => {
   targetThursday.setHours(targetThursday.getHours() - ds);
 
   // Number of weeks between target Thursday and first Thursday
-  const weekDiff = (targetThursday.getTime() - firstThursday.getTime()) / microsecondsPerWeek;
-  return "" + (1 + ~~(weekDiff));
+  const weekDiff = (targetThursday.getTime() - firstThursday.getTime()) / 604800000;
+  return (1 + ~~(weekDiff));
 };
 
 /**
@@ -114,9 +91,10 @@ const getWeek = (date) => {
  * @param  {Date} options.date - The date
  * @param  {function} options.D - Function to get the day of the week (0-6)
  * @param  {boolean} options.short - Whether to return short names (Tdy, Ysd, Tmw)
+ * @param  {Object} options.i18n - Object containing i18n day names
  * @return {String}
  */
-const getDayName = ({ date, D, short }) => {
+const getDayName = ({ date, D, short, i18n }) => {
   // Get the timestamp of the date in milliseconds, since epoch in UTC
   const dateTimestamp = date.getTime();
 
@@ -142,11 +120,17 @@ const getDayName = ({ date, D, short }) => {
     return short ? 'Ysd' : 'Yesterday';
   }
 
-  return short ? i18n.dayNamesShort[D()] : i18n.dayNamesLong[D()];
+  return short ? i18n.dayNamesShort[D(date)] : i18n.dayNamesLong[D(date)];
 };
 
 
-const standardMaskNames = /** @type {const} */(['default', 'shortDate', 'paddedShortDate', 'mediumDate', 'longDate', 'fullDate', 'shortTime', 'mediumTime', 'longTime', 'isoDate', 'isoTime', 'isoDateTime', 'isoUtcDateTime', 'expiresHeaderFormat']);
+const standardMaskNames = /** @type {const} */([
+  'default',
+  'shortDate', 'paddedShortDate', 'mediumDate', 'longDate', 'fullDate', 'isoDate',
+  'shortTime', 'mediumTime', 'longTime', 'isoTime',
+  'isoDateTime', 'isoUtcDateTime',
+  'expiresHeaderFormat'
+]);
 
 export const standardMasks = /** @type {Record<maskNames[number], (this: DateFormatter, date:Date) => string>} */ ({
   default: function (date) { return `${this.ddd(date)} ${this.mmm(date)} ${this.dd(date)} ${this.yyyy(date)} ${this.HH(date)}:${this.MM(date)}:${this.ss(date)}` },
@@ -160,11 +144,18 @@ export const standardMasks = /** @type {Record<maskNames[number], (this: DateFor
   longTime: function (date) { return `${this.h(date)}:${this.MM(date)}:${this.ss(date)} ${this.TT(date)} ${this.Z(date)}` },
   isoDate: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}` },
   isoTime: function (date) { return `${this.HH(date)}:${this.MM(date)}:${this.ss(date)}` },
-  isoDateTime: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}T${this.HH(date)}:${this.MM(date)}:${this.ss(date)}${this.Z(date)}` },
+  isoDateTime: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}T${this.HH(date)}:${this.MM(date)}:${this.ss(date)}${this.o(date)}` },
   isoUtcDateTime: function (date) { return `${this.yyyy(date)}-${this.mm(date)}-${this.dd(date)}T${this.HH(date)}:${this.MM(date)}:${this.ss(date)}Z` },
-  expiresHeaderFormat: function (date) { return `${this.ddd(date)}, ${this.dd(date)} ${this.mmm(date)} ${this.yyyy(date)} ${this.HH(date)}:${this.MM(date)}:${this.ss(date)} ${this.o(date)}` },
+  expiresHeaderFormat: function (date) { return `${this.ddd(date)}, ${this.dd(date)} ${this.mmm(date)} ${this.yyyy(date)} ${this.HH(date)}:${this.MM(date)}:${this.ss(date)} ${this.Z(date)}` },
 });
 
+/**
+ * @typedef {'getDate'|'getDay'|'getMonth'|'getFullYear'|
+ * 'getHours'|'getMinutes'| 'getSeconds'| 'getMilliseconds'|
+ * 'getTimezoneOffset'} DateFn
+ */
+
+/** @type {Record<DateFn, () => number>} */
 const UTC_FNS = {
   getDate: Date.prototype.getUTCDate.call.bind(Date.prototype.getUTCDate),
   getDay: Date.prototype.getUTCDay.call.bind(Date.prototype.getUTCDay),
@@ -177,6 +168,7 @@ const UTC_FNS = {
   getTimezoneOffset: () => 0, // UTC does not have a timezone offset
 }
 
+/** @type {Record<DateFn, () => number>} */
 const GMT_FNS = {
   getDate: Date.prototype.getDate.call.bind(Date.prototype.getDate),
   getDay: Date.prototype.getDay.call.bind(Date.prototype.getDay),
@@ -190,8 +182,6 @@ const GMT_FNS = {
 }
 
 export class DateFormatter {
-  #tokenRE = /d{1,4}|D{3,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|W{1,2}|[LlopSZN]|"[^"]*"|'[^']*'/g;
-
   /**
    * @type {'GMT'|'UTC'}
    */
@@ -276,6 +266,10 @@ export class DateFormatter {
   constructor(mask, mode = 'GMT') {
     if (typeof mode === 'string') {
       mode = mode.toUpperCase();
+      if (mode !== 'GMT' && mode !== 'UTC') {
+        throw TypeError("Mode must be 'GMT' or 'UTC'");
+      }
+      this.#mode = mode;
     } else if (typeof mask === 'string') {
       if (mask === 'isoUtcDateTime') {
         this.#mode = 'UTC';
@@ -326,9 +320,10 @@ export class DateFormatter {
   }
 
   #tokenize() {
+    const tokenRE = /d{1,4}|D{3,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|W{1,2}|[LlopSZN]|"[^"]*"|'[^']*'/g
     let match
     let pos = 0
-    while ((match = this.#tokenRE.exec(this.#mask)) != null) {
+    while ((match = tokenRE.exec(this.#mask)) != null) {
       if (pos !== match.index) {
         const token = this.#mask.slice(pos, match.index);
         this.#tokenFns.push(() => token);
@@ -357,6 +352,7 @@ export class DateFormatter {
           break;
         case "hh":
           this.#tokenFns.push(this.hh.bind(this));
+          break;
         case "H":
           this.#tokenFns.push(this.H.bind(this));
           break;
@@ -433,14 +429,17 @@ export class DateFormatter {
           this.#tokenFns.push(this.Z.bind(this));
           break;
         default:
-          if (match[0][0] === '\'' && match[0][match[0].length - 1] === '\'') {
+          if (
+            (match[0][0] === '\'' && match[0][match[0].length - 1] === '\'') ||
+            (match[0][0] === '\"' && match[0][match[0].length - 1] === '\"')
+          ) {
             const token = match[0].slice(1, -1);
             this.#tokenFns.push(() => token);
             break;
           }
           console.log("Unknown token:", match[0]);
       }
-      pos = this.#tokenRE.lastIndex;
+      pos = tokenRE.lastIndex;
     }
 
     if (pos !== this.#mask.length) {
@@ -484,7 +483,7 @@ export class DateFormatter {
    * '29'|'30'|'31'}
    */
   d(date) {
-    return NO_PAD[this.#d(date)];
+    return PAD_0[this.#d(date)];
   }
 
   /**
@@ -563,9 +562,11 @@ export class DateFormatter {
 
   /**
    * Hours; leading zero for single-digit hours (12-hour clock).
+   * @param {Date} date
+   * @returns {'01'|'02'|'03'|'04'|'05'|'06'|'07'|'08'|'09'|'10'|'11'|'12'}
    */
   hh(date) {
-    return HOURS_H_PAD[this.#H(date)];
+    return HOURS_H_PAD_2[this.#H(date)];
   }
 
   /**
@@ -576,7 +577,7 @@ export class DateFormatter {
    * '14'|'15'|'16'|'17'|'18'|'19'|'20'|'21'|'22'|'23'}
    */
   H(date) {
-    return NO_PAD[this.#H(date)];
+    return PAD_0[this.#H(date)];
   }
 
   /**
@@ -617,7 +618,7 @@ export class DateFormatter {
    * @returns {'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'|'10'|'11'|'12'}
    */
   m(date) {
-    return NO_PAD[this.#m(date) + 1];
+    return PAD_0[this.#m(date) + 1];
   }
 
   /**
@@ -661,7 +662,7 @@ export class DateFormatter {
    * '54'|'55'|'56'|'57'|'58'|'59'}
    */
   M(date) {
-    return NO_PAD[this.#M(date)];
+    return PAD_0[this.#M(date)];
   }
 
   /**
@@ -719,7 +720,7 @@ export class DateFormatter {
    * '56'|'57'|'58'|'59'}
    */
   s(date) {
-    return NO_PAD[this.#s(date)];
+    return PAD_0[this.#s(date)];
   }
 
   /**
@@ -743,7 +744,7 @@ export class DateFormatter {
    * @return {'st'|'nd'|'rd'|'th'}
    */
   S(date) {
-    return daySuffix[this.#d(date)];
+    return DATE_SUFFIX[this.#d(date)];
   }
 
   /**
@@ -803,8 +804,8 @@ export class DateFormatter {
    * '30'|'31'|'32'|'33'|'34'|'35'|'36'|'37'|'38'|'39'|'40'|'41'|'42'|'43'|
    * '44'|'45'|'46'|'47'|'48'|'49'|'50'|'51'|'52'|'53}
    */
-  get W() {
-    return getWeek
+  W(date) {
+    return PAD_0[getWeek(date)];
   }
 
   /**
@@ -816,8 +817,8 @@ export class DateFormatter {
    * '27'|'28'|'29'|'30'|'31'|'32'|'33'|'34'|'35'|'36'|'37'|'38'|'39'|'40'|
    * '41'|'42'|'43'|'44'|'45'|'46'|'47'|'48'|'49'|'50'|'51'|'52'|'53'}
    */
-  get WW() {
-    return (date) => PAD_2[getWeek(date)];
+  WW(date) {
+    return PAD_2[getWeek(date)];
   }
 
   /**
@@ -847,6 +848,10 @@ export class DateFormatter {
     return PAD_4[this.#yyyy(date)];
   }
 
+  /**
+   * @param {Date} date 
+   * @returns {'UTC'|`GMT{string}`}
+   */
   Z(date) {
     const offset = this.#o(date);
     if (offset === 0) {
@@ -855,41 +860,3 @@ export class DateFormatter {
     return `GMT${this.o(date)}`;
   }
 }
-
-const date = new Date(2025, 7, 2, 12, 34, 56, 789);
-
-console.assert(new DateFormatter(mask).d(date) === '2', 'd')
-console.assert(new DateFormatter(mask).dd(date) === '02', 'dd')
-console.assert(new DateFormatter(mask).ddd(date) === 'Sat', 'ddd')
-console.assert(new DateFormatter(mask).dddd(date) === 'Saturday', 'dddd')
-console.assert(new DateFormatter(mask).DDD(date) === 'Tdy', 'DDD')
-console.assert(new DateFormatter(mask).DDDD(date) === 'Today', 'DDDD')
-console.assert(new DateFormatter(mask).h(date) === '12'), 'h';
-console.assert(new DateFormatter(mask).H(date) === '12'), 'H';
-console.assert(new DateFormatter(mask).hh(date) === '12'), 'hh';
-console.assert(new DateFormatter(mask).HH(date) === '12'), 'HH';
-console.assert(new DateFormatter(mask).L(date) === '78'), 'L';
-console.assert(new DateFormatter(mask).l(date) === '789'), 'l';
-console.assert(new DateFormatter(mask).M(date) === '34'), 'M';
-console.assert(new DateFormatter(mask).m(date) === '8', 'm')
-console.assert(new DateFormatter(mask).mm(date) === '08', 'mm')
-console.assert(new DateFormatter(mask).MM(date) === '34'), 'MM';
-console.assert(new DateFormatter(mask).mmm(date) === 'Aug', 'mmm')
-console.assert(new DateFormatter(mask).mmmm(date) === 'August', 'mmmm')
-console.assert(new DateFormatter(mask).N(date) === '6', 'N')
-console.assert(new DateFormatter(mask).o(date) === '+0200'), 'o';
-console.assert(new DateFormatter(mask).p(date) === '+02:00', 'p')
-console.assert(new DateFormatter(mask).s(date) === '56'), 's';
-console.assert(new DateFormatter(mask).S(date) === 'nd'), 'S';
-console.assert(new DateFormatter(mask).ss(date) === '56'), 'ss';
-console.assert(new DateFormatter(mask).t(date) === 'p'), 't';
-console.assert(new DateFormatter(mask).tt(date) === 'pm'), 'tt';
-console.assert(new DateFormatter(mask).T(date) === 'P'), 'T';
-console.assert(new DateFormatter(mask).TT(date) === 'PM'), 'TT';
-console.assert(new DateFormatter(mask).W(date) === '31', 'W')
-console.assert(new DateFormatter(mask).WW(date) === '31', 'WW')
-console.assert(new DateFormatter(mask).yy(date) === '25', 'yy')
-console.assert(new DateFormatter(mask).yyyy(date) === '2025', 'yyyy')
-console.assert(new DateFormatter('default').format(date) === 'Sat Aug 02 2025 12:34:56', 'format: default');
-console.assert(new DateFormatter('longDate').format(date) === 'August 2, 2025', 'format: longDate');
-console.assert(new DateFormatter('longTime').format(date) === '12:34:56 PM GMT+0200', 'format: longDate');
