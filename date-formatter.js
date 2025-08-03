@@ -848,9 +848,6 @@ export class DateFormatter {
   }
 
   Z(date) {
-    if (this.#mode === 'UTC') {
-      return 'Z';
-    }
     const offset = this.#o(date);
     if (offset === 0) {
       return 'UTC';
