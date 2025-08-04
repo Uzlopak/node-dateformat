@@ -107,6 +107,7 @@ const getDayName = ({ date, D, short, i18n }) => {
     localNow.getFullYear(),
     localNow.getMonth(),
     localNow.getDate()
+  ).getTime();
 
   if (dateTimestamp >= todayBeginTimestamp) {
     if (dateTimestamp < (todayBeginTimestamp + 86400000)) { // within 24 hours
