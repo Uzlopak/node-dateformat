@@ -101,14 +101,11 @@ const getDayName = ({ date, D, short, i18n }) => {
   // Get the timestamp of the beginning of today in UTC by using Date.UTC,
   // We use the provided date's year, month, and date, and set hours, minutes,
   // seconds and milliseconds to 0.
-  // We correct the timestamp by using the timezone offset of the provided date, to
-  // ensure we are comparing the timestamps with the same timezone-offset.
   const localNow = new Date();
-  const todayBeginTimestamp = Date.UTC(
+  const todayBeginTimestamp = new Date(
     localNow.getFullYear(),
     localNow.getMonth(),
     localNow.getDate()
-  ) - (localNow.getTimezoneOffset() * 60000);
 
   if (dateTimestamp >= todayBeginTimestamp) {
     if (dateTimestamp < (todayBeginTimestamp + 86400000)) { // within 24 hours
