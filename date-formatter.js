@@ -64,14 +64,15 @@ const getWeek = (date) => {
     d - thursdaySameWeekLookup[targetThursday.getDay()] + 3
   );
 
-  let firstThursday = firstThursdays.get(Y);
+  const targetThursdayYear = targetThursday.getFullYear();
+  let firstThursday = firstThursdays.get(targetThursdayYear);
   if (!firstThursday) {
     // Take January 4th as it is always in week 1 (see ISO 8601)
-    firstThursday = new Date(targetThursday.getFullYear(), 0, 4);
+    firstThursday = new Date(targetThursdayYear, 0, 4);
 
     // Change date to Thursday same week
     firstThursday.setDate(firstDaysOfWeekLookup[firstThursday.getDay()]);
-    firstThursdays.set(Y, firstThursday);
+    firstThursdays.set(targetThursdayYear, firstThursday);
   }
 
   // Check if daylight-saving-time-switch occurred and correct for it
@@ -82,7 +83,7 @@ const getWeek = (date) => {
   // Number of weeks between target Thursday and first Thursday
   const weekDiff = (targetThursday.getTime() - firstThursday.getTime()) / 604800000;
   return (1 + ~~(weekDiff));
-};
+}
 
 /**
  * Get day name
